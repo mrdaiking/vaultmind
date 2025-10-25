@@ -39,12 +39,18 @@ class GoogleCalendarClient:
         """Get or create Google Calendar API service"""
         if not self.service:
             try:
-                # Create credentials from access token
-                credentials = Credentials(token=self.access_token)
+                # Create credentials with explicit None values to prevent refresh attempts
+                credentials = Credentials(
+                    token=self.access_token,
+                    refresh_token=None,
+                    token_uri=None,
+                    client_id=None,
+                    client_secret=None
+                )
                 
                 # Build Calendar API service
                 self.service = build('calendar', 'v3', credentials=credentials)
-                logger.info("Google Calendar service initialized")
+                logger.info("Google Calendar service initialized with access token")
             except Exception as e:
                 logger.error(f"Failed to initialize Calendar service: {e}")
                 raise
