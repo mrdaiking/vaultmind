@@ -109,12 +109,17 @@ export default function Home() {
         {/* Demo Video / Screenshot Section */}
         <div className="mb-20">
           <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
-            <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <span className="text-6xl mb-4 block">🎬</span>
-                <p className="text-2xl font-bold text-gray-700">Demo Video Coming Soon</p>
-                <p className="text-gray-600 mt-2">See VaultMind in action with secure Auth0 integration</p>
-              </div>
+            <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg overflow-hidden">
+              <iframe
+                width="100%"
+                height="100%"
+                src="https://www.youtube.com/embed/Pv8nke_2LM4"
+                title="VaultMind Demo - Secure AI Calendar Assistant"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="rounded-lg"
+              ></iframe>
             </div>
           </div>
         </div>
