@@ -1,6 +1,6 @@
 # 🔐 VaultMind: Secure AI Agent Demo
 
-A **hackathon-ready** demonstration of secure AI agents using **Auth0 for AI**, featuring JWT validation, Token Vault integration, and comprehensive audit logging.
+A application demonstration of secure AI agents using **Auth0 for AI**, featuring JWT validation, secure token management, and comprehensive audit logging.
 
 ## 🚀 Quick Start
 
@@ -57,18 +57,7 @@ async def verify_jwt(credentials: HTTPAuthorizationCredentials = Security(securi
     return payload
 ```
 
-### 2. **Token Vault Integration**
-- **No Stored Credentials**: Application never stores user refresh tokens or long-lived credentials
-- **Short-lived Tokens**: Exchanges Auth0 JWT for short-lived provider tokens (Google Calendar)
-- **Scoped Access**: Requests minimal required permissions for each operation
-
-```python
-async def exchange_token_with_vault(user_jwt: str, provider: str = "google"):
-    # Exchanges Auth0 JWT for short-lived Google Calendar token
-    # Token Vault handles OAuth refresh and scope validation
-```
-
-### 3. **Comprehensive Audit Logging**
+### 2. **Comprehensive Audit Logging**
 - **Action Tracking**: Every agent action is logged with user context
 - **Security Context**: Logs include user ID, timestamp, action details, and success status
 - **Privacy Compliant**: Logs user actions without storing sensitive content
@@ -236,9 +225,9 @@ Authorization: Bearer <auth0-jwt>
 - User-scoped API access
 
 ### ✅ **Token Security**
-- Short-lived access tokens only
+- Short-lived access tokens from Auth0
 - No stored refresh tokens
-- Token Vault integration ready
+- Secure token management via Auth0 Management API
 
 ### ✅ **Input Validation**
 - Pydantic schema validation
@@ -292,7 +281,32 @@ cd frontend
 npm run test
 ```
 
-## 🐛 Troubleshooting
+## � Email Notifications (NEW!)
+
+VaultMind now supports **instant email notifications** when users join the waitlist!
+
+### Quick Setup (5 minutes)
+1. **Get Resend API key**: https://resend.com/api-keys
+2. **Add to `.env.local`**:
+   ```bash
+   RESEND_API_KEY=re_your_api_key_here
+   RESEND_FROM_EMAIL=VaultMind <onboarding@resend.dev>
+   ```
+3. **Restart dev server**: `npm run dev`
+4. **Test**: Submit waitlist form → Check your email! 📬
+
+**What you'll receive:**
+- User's email & use case
+- Timestamp & signup count
+- Link to validation dashboard
+
+**Documentation:**
+- Quick guide: `EMAIL_SETUP_QUICK.md`
+- Full guide: `EMAIL_NOTIFICATIONS.md`
+
+**Free tier:** 3,000 emails/month with Resend
+
+## �🐛 Troubleshooting
 
 ### Common Issues
 

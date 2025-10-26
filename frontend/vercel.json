@@ -1,18 +1,3 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "env": {
-    "AUTH0_SECRET": "@auth0-secret",
-    "AUTH0_BASE_URL": "@auth0-base-url", 
-    "AUTH0_ISSUER_BASE_URL": "@auth0-issuer-base-url",
-    "AUTH0_CLIENT_ID": "@auth0-client-id",
-    "AUTH0_CLIENT_SECRET": "@auth0-client-secret",
-    "AUTH0_AUDIENCE": "@auth0-audience",
-    "NEXT_PUBLIC_API_URL": "@next-public-api-url"
-  }
+  "framework": "nextjs"
 }

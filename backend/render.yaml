@@ -14,7 +14,5 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
-      - key: TOKEN_VAULT_ENDPOINT
-        sync: false
       - key: PYTHON_VERSION
         value: 3.11.0

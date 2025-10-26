@@ -1,0 +1,3 @@
+"""
+VaultMind backend application package
+"""

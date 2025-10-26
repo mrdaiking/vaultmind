@@ -1,4 +1,7 @@
 """
+Created by Felix
+Date: 2025-10-26
+Description:
 Google Calendar API integration using OAuth2 access tokens from Auth0
 """
 import os
@@ -10,11 +13,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # Import Management API helper
-import sys
-import asyncio
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent))
-from auth0_management import get_google_access_token_from_management_api
+from app.auth0_management import get_google_access_token_from_management_api
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +49,9 @@ class GoogleCalendarClient:
                 
                 # Build Calendar API service
                 self.service = build('calendar', 'v3', credentials=credentials)
-                logger.info("Google Calendar service initialized with access token")
+                logger.info("[CALENDAR] Google Calendar service initialized with access token")
             except Exception as e:
-                logger.error(f"Failed to initialize Calendar service: {e}")
+                logger.error(f"[CALENDAR][ERROR] Failed to initialize Calendar service: {e}")
                 raise
         
         return self.service
@@ -109,14 +108,14 @@ class GoogleCalendarClient:
                     ]
                 })
             
-            logger.info(f"Retrieved {len(formatted_events)} calendar events")
+            logger.info(f"[CALENDAR] Retrieved {len(formatted_events)} calendar events")
             return formatted_events
             
         except HttpError as e:
-            logger.error(f"Google Calendar API error: {e}")
+            logger.error(f"[CALENDAR][ERROR] Google Calendar API error: {e}")
             raise Exception(f"Failed to list calendar events: {e.reason}")
         except Exception as e:
-            logger.error(f"Unexpected error listing events: {e}")
+            logger.error(f"[CALENDAR][ERROR] Unexpected error listing events: {e}")
             raise
     
     async def create_event(
@@ -175,7 +174,7 @@ class GoogleCalendarClient:
                 body=event_body
             ).execute()
             
-            logger.info(f"Created calendar event: {created_event.get('id')}")
+            logger.info(f"[CALENDAR] ✅ Created calendar event: {created_event.get('id')}")
             
             return {
                 'id': created_event.get('id'),
@@ -188,10 +187,10 @@ class GoogleCalendarClient:
             }
             
         except HttpError as e:
-            logger.error(f"Google Calendar API error: {e}")
+            logger.error(f"[CALENDAR][ERROR] Google Calendar API error: {e}")
             raise Exception(f"Failed to create calendar event: {e.reason}")
         except Exception as e:
-            logger.error(f"Unexpected error creating event: {e}")
+            logger.error(f"[CALENDAR][ERROR] Unexpected error creating event: {e}")
             raise
     
     async def delete_event(self, event_id: str) -> bool:
@@ -212,14 +211,14 @@ class GoogleCalendarClient:
                 eventId=event_id
             ).execute()
             
-            logger.info(f"Deleted calendar event: {event_id}")
+            logger.info(f"[CALENDAR] ✅ Deleted calendar event: {event_id}")
             return True
             
         except HttpError as e:
-            logger.error(f"Google Calendar API error: {e}")
+            logger.error(f"[CALENDAR][ERROR] Google Calendar API error: {e}")
             raise Exception(f"Failed to delete calendar event: {e.reason}")
         except Exception as e:
-            logger.error(f"Unexpected error deleting event: {e}")
+            logger.error(f"[CALENDAR][ERROR] Unexpected error deleting event: {e}")
             raise
     
     async def update_event(
@@ -275,7 +274,7 @@ class GoogleCalendarClient:
                 body=event
             ).execute()
             
-            logger.info(f"Updated calendar event: {event_id}")
+            logger.info(f"[CALENDAR] ✅ Updated calendar event: {event_id}")
             
             return {
                 'id': updated_event.get('id'),
@@ -287,10 +286,63 @@ class GoogleCalendarClient:
             }
             
         except HttpError as e:
-            logger.error(f"Google Calendar API error: {e}")
+            logger.error(f"[CALENDAR][ERROR] Google Calendar API error: {e}")
             raise Exception(f"Failed to update calendar event: {e.reason}")
         except Exception as e:
-            logger.error(f"Unexpected error updating event: {e}")
+            logger.error(f"[CALENDAR][ERROR] Unexpected error updating event: {e}")
+            raise
+    
+    async def check_conflicts(
+        self,
+        start_time: str,
+        end_time: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Check for scheduling conflicts in the given time range
+        
+        Args:
+            start_time: ISO format start time
+            end_time: ISO format end time
+            
+        Returns:
+            List of conflicting events
+        """
+        try:
+            service = self._get_service()
+            
+            # Query events in the time range
+            events_result = service.events().list(
+                calendarId='primary',
+                timeMin=start_time,
+                timeMax=end_time,
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute()
+            
+            events = events_result.get('items', [])
+            
+            # Format conflicts
+            conflicts = []
+            for event in events:
+                conflicts.append({
+                    'id': event.get('id'),
+                    'title': event.get('summary', 'No Title'),
+                    'start': event['start'].get('dateTime', event['start'].get('date')),
+                    'end': event['end'].get('dateTime', event['end'].get('date'))
+                })
+            
+            if conflicts:
+                logger.info(f"[CALENDAR] Found {len(conflicts)} potential conflicts")
+            else:
+                logger.info("[CALENDAR] No scheduling conflicts found")
+            
+            return conflicts
+            
+        except HttpError as e:
+            logger.error(f"[CALENDAR][ERROR] Google Calendar API error: {e}")
+            raise Exception(f"Failed to check conflicts: {e.reason}")
+        except Exception as e:
+            logger.error(f"[CALENDAR][ERROR] Unexpected error checking conflicts: {e}")
             raise
 
 
@@ -311,17 +363,17 @@ async def get_google_access_token_from_auth0(user_claims: Dict[str, Any]) -> Opt
     # Method 1: Check for namespaced custom claim (if Action worked)
     google_token = user_claims.get("https://vaultmind.app/google_access_token")
     if google_token:
-        logger.info("✅ Found Google access token in JWT custom claim (namespaced)")
+        logger.info("[AUTH] ✅ Found Google access token in JWT custom claim (namespaced)")
         return google_token
     
     # Method 2: Check for non-namespaced custom claim (fallback)
     google_token = user_claims.get("google_access_token")
     if google_token:
-        logger.info("✅ Found Google access token in JWT custom claim (non-namespaced)")
+        logger.info("[AUTH] ✅ Found Google access token in JWT custom claim (non-namespaced)")
         return google_token
     
     # Method 3: Fetch from Management API (runtime)
-    logger.info("💡 No token in JWT, trying Auth0 Management API...")
+    logger.info("[AUTH] 💡 No token in JWT, trying Auth0 Management API...")
     user_sub = user_claims.get("sub")
     if user_sub:
         google_token = await get_google_access_token_from_management_api(user_sub)
@@ -334,11 +386,11 @@ async def get_google_access_token_from_auth0(user_claims: Dict[str, Any]) -> Opt
         if identity.get("provider") == "google-oauth2":
             access_token = identity.get("access_token")
             if access_token:
-                logger.info("✅ Found Google access token in identities array")
+                logger.info("[AUTH] ✅ Found Google access token in identities array")
                 return access_token
     
     # Debug: Log available claims
-    logger.warning("❌ No Google access token found via any method")
-    logger.debug(f"Available claims: {list(user_claims.keys())}")
+    logger.warning("[AUTH] ❌ No Google access token found via any method")
+    logger.debug(f"[AUTH] Available claims: {list(user_claims.keys())}")
     
     return None

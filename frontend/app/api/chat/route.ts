@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // Get the message from request body
     const body = await request.json()
-    const { message } = body
+    const { message, timezone } = body
 
     if (!message) {
       return NextResponse.json(
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Calling backend with token:', session.accessToken.substring(0, 20) + '...')
+    console.log('Timezone:', timezone || 'UTC')
 
     // Call backend API with the access token
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -42,7 +43,10 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.accessToken}`
       },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ 
+        message,
+        timezone: timezone || 'UTC'
+      })
     })
 
     console.log('Backend response status:', response.status)
