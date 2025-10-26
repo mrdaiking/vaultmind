@@ -765,7 +765,7 @@ async def list_calendar_events(user_claims: Dict[str, Any] = Depends(verify_jwt)
 
     try:
         # Extract Google access token from Auth0 user claims
-        google_token = get_google_access_token_from_auth0(user_claims)
+        google_token = await get_google_access_token_from_auth0(user_claims)
 
         if not google_token:
             # Fallback to mock data if no Google token
@@ -815,7 +815,7 @@ async def create_calendar_event(
 
     try:
         # Extract Google access token from Auth0 user claims
-        google_token = get_google_access_token_from_auth0(user_claims)
+        google_token = await get_google_access_token_from_auth0(user_claims)
 
         if not google_token:
             # Fallback to mock event creation

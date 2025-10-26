@@ -1,6 +1,11 @@
-# 🔐 VaultMind: Secure AI Agent Demo
+# 🔐 VaultMind: Secure AI Calendar Assistant
 
-A application demonstration of secure AI agents using **Auth0 for AI**, featuring JWT validation, secure token management, and comprehensive audit logging.
+> **Live Demo**: [https://vaultmind-app.vercel.app](https://vaultmind-app.vercel.app)  
+> **Video Demo**: [Watch on YouTube](https://youtu.be/Pv8nke_2LM4)
+
+An enterprise-grade AI calendar assistant demonstrating secure AI agent development using **Auth0 for AI**. Features natural language calendar management with real Google Calendar integration, JWT validation, rate limiting, content moderation, and comprehensive audit logging.
+
+**Built for the Auth0 AI Agents Challenge** 🏆
 
 ## 🚀 Quick Start
 
@@ -77,43 +82,36 @@ class AuditLog:
 
 ```
 vaultmind/
-├── backend/                 # FastAPI backend
-│   ├── main.py             # Main application with security middleware
-│   ├── requirements.txt    # Python dependencies
-│   ├── .env.example       # Environment configuration template
-│   └── render.yaml        # Deployment configuration
-├── frontend/               # Next.js frontend
-│   ├── app/               # App Router pages
-│   │   ├── page.tsx       # Landing page with Auth0 login
-│   │   ├── chat/          # Secure chat interface
-│   │   ├── layout.tsx     # Auth0 UserProvider setup
-│   │   └── api/auth/      # Auth0 API routes
-│   ├── package.json       # Dependencies and scripts
-│   ├── .env.example      # Environment configuration template
-│   └── vercel.json       # Deployment configuration
-└── README.md             # This file
+├── backend/                      # FastAPI backend
+│   ├── main.py                  # Main app with AI agent, security, rate limiting
+│   ├── app/
+│   │   ├── auth0_management.py  # Auth0 JWT validation & user management
+│   │   └── google_calendar.py   # Google Calendar API integration
+│   ├── requirements.txt         # Python dependencies
+│   ├── test_*.py               # Comprehensive test suite
+│   ├── RATE_LIMITING.md        # Rate limiting documentation
+│   ├── CONTENT_MODERATION.md   # Moderation documentation
+│   └── .env.example            # Environment template
+├── frontend/                     # Next.js 15 frontend
+│   ├── app/
+│   │   ├── page.tsx            # Landing page with demo video
+│   │   ├── chat/               # AI chat interface
+│   │   ├── validation/         # Security dashboard
+│   │   ├── layout.tsx          # Auth0 UserProvider
+│   │   └── api/
+│   │       ├── auth/           # Auth0 routes
+│   │       ├── chat/           # Chat API proxy
+│   │       └── waitlist/       # Waitlist API
+│   ├── components/             # React components
+│   └── .env.example           # Environment template
+├── GOOGLE_OAUTH_SETUP.md        # Google Calendar setup guide
+├── AUTH0_SETUP.md              # Auth0 configuration guide
+└── README.md                   # This file
 ```
 
 ## 🔧 Configuration
 
 ### Quick Start: Automated Auth0 Setup
-
-Run the interactive configuration script:
-
-```bash
-./configure-auth0.sh
-```
-
-This script will:
-- Guide you through Auth0 configuration
-- Generate secure secrets automatically
-- Create both `.env` files with your credentials
-
-### Manual Auth0 Setup
-
-For detailed step-by-step instructions, see **[AUTH0_SETUP.md](./AUTH0_SETUP.md)**
-
-**Quick Summary:**
 
 1. **Create Auth0 Application** (Single Page Application)
 2. **Create Auth0 API** with identifier `https://vaultmind-api`
@@ -123,7 +121,6 @@ For detailed step-by-step instructions, see **[AUTH0_SETUP.md](./AUTH0_SETUP.md)
 
 ### Understanding the Auth0 Flow
 
-See **[AUTH0_FLOW.md](./AUTH0_FLOW.md)** for:
 - Complete authentication flow diagrams
 - JWT token structure and validation
 - Security features explanation
@@ -149,9 +146,6 @@ AUTH0_SECRET=$(openssl rand -hex 32)
 
 ### Google Calendar Setup (Optional but Recommended)
 To access **real** Google Calendar data instead of mock events:
-
-1. **Follow the detailed guide**: See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md)
-2. **Quick summary**:
    - Create Google Cloud project and enable Calendar API
    - Create OAuth2 credentials
    - Update Auth0 Google connection with Calendar scopes
@@ -243,8 +237,9 @@ Authorization: Bearer <auth0-jwt>
 - CORS properly configured
 - HTTPS in production (via hosting)
 - Rate limiting ready (add middleware)
+- Validation of OpenAI responses to prevent prompt injection
 
-## 🎯 Hackathon Features
+## 🎯 Auth0 Challenge Features
 
 ### **MVP Ready**
 - ✅ Working Auth0 login flow
@@ -258,7 +253,6 @@ Authorization: Bearer <auth0-jwt>
 2. **Demonstrate Security**: Show JWT validation in browser dev tools
 3. **AI Interaction**: Chat with agent to create calendar events
 4. **Audit Trail**: Display security logs for all actions
-5. **Token Vault**: Explain short-lived token exchange flow
 
 ### **Scaling Ready**
 - Database integration (SQLite → PostgreSQL)
@@ -281,30 +275,6 @@ cd frontend
 npm run test
 ```
 
-## � Email Notifications (NEW!)
-
-VaultMind now supports **instant email notifications** when users join the waitlist!
-
-### Quick Setup (5 minutes)
-1. **Get Resend API key**: https://resend.com/api-keys
-2. **Add to `.env.local`**:
-   ```bash
-   RESEND_API_KEY=re_your_api_key_here
-   RESEND_FROM_EMAIL=VaultMind <onboarding@resend.dev>
-   ```
-3. **Restart dev server**: `npm run dev`
-4. **Test**: Submit waitlist form → Check your email! 📬
-
-**What you'll receive:**
-- User's email & use case
-- Timestamp & signup count
-- Link to validation dashboard
-
-**Documentation:**
-- Quick guide: `EMAIL_SETUP_QUICK.md`
-- Full guide: `EMAIL_NOTIFICATIONS.md`
-
-**Free tier:** 3,000 emails/month with Resend
 
 ## �🐛 Troubleshooting
 
@@ -335,7 +305,3 @@ VaultMind now supports **instant email notifications** when users join the waitl
 - [FastAPI Security Guide](https://fastapi.tiangolo.com/tutorial/security/)
 - [Next.js Auth0 SDK](https://github.com/auth0/nextjs-auth0)
 - [Token Vault Best Practices](https://oauth.net/2/token-exchange/)
-
-## 📄 License
-
-MIT License - Perfect for hackathons and demos!
