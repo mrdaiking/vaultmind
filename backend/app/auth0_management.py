@@ -16,6 +16,58 @@ logger = logging.getLogger(__name__)
 _mgmt_token_cache = {"token": None, "expires_at": None}
 
 
+class Auth0ManagementClient:
+    """Wrapper for Auth0 Management API operations."""
+    
+    def __init__(self):
+        self.auth0_domain = os.getenv("AUTH0_DOMAIN")
+        self.logger = logging.getLogger(__name__)
+    
+    async def get_user_profile(self, user_id: str) -> Dict[str, Any]:
+        """
+        Get full user profile including identities from Auth0 Management API.
+        
+        Args:
+            user_id: Auth0 user ID (sub)
+            
+        Returns:
+            User data dictionary with identities
+        """
+        try:
+            mgmt_token = await get_management_api_token()
+            encoded_user_id = user_id.replace("|", "%7C")
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"https://{self.auth0_domain}/api/v2/users/{encoded_user_id}",
+                    headers={"Authorization": f"Bearer {mgmt_token}"},
+                )
+                
+                if response.status_code != 200:
+                    self.logger.error(
+                        f"[ERROR] Failed to fetch user profile: {response.status_code} {response.text}"
+                    )
+                    return {}
+                
+                return response.json()
+                
+        except Exception as e:
+            self.logger.error(f"[ERROR] Error fetching user profile: {e}")
+            return {}
+    
+    async def get_google_access_token_from_auth0(self, user_id: str) -> Optional[str]:
+        """
+        Get Google access token for a user from Auth0.
+        
+        Args:
+            user_id: Auth0 user ID (sub)
+            
+        Returns:
+            Google access token if found, None otherwise
+        """
+        return await get_google_access_token_from_management_api(user_id)
+
+
 async def get_management_api_token() -> str:
     """Get Auth0 Management API access token with caching"""
 

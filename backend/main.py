@@ -32,6 +32,13 @@ load_dotenv()
 
 # Import Google Calendar integration
 from app.google_calendar import GoogleCalendarClient, get_google_access_token_from_auth0
+from app.auth0_management import Auth0ManagementClient
+
+# Feature flag for auth0_ai_langchain integration
+USE_AUTH0_AI_LANGCHAIN = os.getenv("USE_AUTH0_AI_LANGCHAIN", "false").lower() == "true"
+
+# Initialize Auth0 Management Client (shared instance)
+auth0_mgmt = Auth0ManagementClient()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -472,7 +479,7 @@ Only use intents: list_calendar, create_event, or general.""",
                 }
 
             # Check for conflicts
-            calendar_client = GoogleCalendarClient(google_token)
+            calendar_client = GoogleCalendarClient(user_id, auth0_mgmt, USE_AUTH0_AI_LANGCHAIN)
             conflicts = await calendar_client.check_conflicts(start_time, end_time)
 
             conflict_warning = ""
@@ -590,7 +597,7 @@ Only use intents: list_calendar, create_event, or general.""",
                 response_text = "📅 Retrieved your upcoming events from Google Calendar (showing mock data - add Calendar scopes to see real events)."
             else:
                 # Use real Google Calendar API
-                calendar_client = GoogleCalendarClient(google_token)
+                calendar_client = GoogleCalendarClient(user_id, auth0_mgmt, USE_AUTH0_AI_LANGCHAIN)
                 events = await calendar_client.list_events(max_results=10)
 
                 # Filter events if date range specified
@@ -781,7 +788,7 @@ async def list_calendar_events(user_claims: Dict[str, Any] = Depends(verify_jwt)
             ]
         else:
             # Use real Google Calendar API
-            calendar_client = GoogleCalendarClient(google_token)
+            calendar_client = GoogleCalendarClient(user_id, auth0_mgmt, USE_AUTH0_AI_LANGCHAIN)
             events = await calendar_client.list_events(max_results=10)
 
         audit_log.log_action(
@@ -832,7 +839,7 @@ async def create_calendar_event(
             }
         else:
             # Use real Google Calendar API
-            calendar_client = GoogleCalendarClient(google_token)
+            calendar_client = GoogleCalendarClient(user_id, auth0_mgmt, USE_AUTH0_AI_LANGCHAIN)
             created_event = await calendar_client.create_event(
                 title=event.title,
                 start_time=event.start_time,

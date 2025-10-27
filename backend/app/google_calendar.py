@@ -14,6 +14,7 @@ from googleapiclient.errors import HttpError
 
 # Import Management API helper
 from app.auth0_management import get_google_access_token_from_management_api
+from app.auth0_ai_adapter import get_google_token_via_langchain
 
 logger = logging.getLogger(__name__)
 
@@ -24,32 +25,106 @@ class GoogleCalendarClient:
     Security: Uses short-lived access tokens from Auth0
     """
     
-    def __init__(self, access_token: str):
+    def __init__(self, user_id: str, auth0_management, use_langchain: bool = False):
         """
-        Initialize Google Calendar client with OAuth2 access token
+        Initialize Google Calendar client with Auth0 management
         
         Args:
-            access_token: OAuth2 access token from Auth0 (with Calendar scopes)
+            user_id: Auth0 user ID (sub)
+            auth0_management: Auth0 management client instance
+            use_langchain: Whether to use auth0_ai_langchain for token exchange
         """
-        self.access_token = access_token
-        self.service = None
+        self.user_id = user_id
+        self.auth0_management = auth0_management
+        self.use_langchain = use_langchain  # Feature flag
+        self.logger = logging.getLogger(__name__)
+        self.service = None  # Lazy-initialized
+        self.access_token = None  # Will be fetched when needed
         
-    def _get_service(self):
-        """Get or create Google Calendar API service"""
-        if not self.service:
-            try:
-                # Create credentials with explicit None values to prevent refresh attempts
-                credentials = Credentials(
-                    token=self.access_token,
-                    refresh_token=None,
-                    token_uri=None,
-                    client_id=None,
-                    client_secret=None
+    async def _get_refresh_token(self) -> Optional[str]:
+        """
+        Get refresh token for the user from Auth0 Management API.
+        Note: This requires the user to have authenticated with offline_access scope.
+        """
+        try:
+            # Get user's identities from Auth0 Management API
+            user_data = await self.auth0_management.get_user_profile(self.user_id)
+            
+            # Look for google-oauth2 identity with refresh token
+            identities = user_data.get("identities", [])
+            for identity in identities:
+                if identity.get("provider") == "google-oauth2":
+                    refresh_token = identity.get("refresh_token")
+                    if refresh_token:
+                        self.logger.info(f"[CALENDAR] Found refresh token for user {self.user_id}")
+                        return refresh_token
+            
+            self.logger.warning(f"[CALENDAR] No refresh token found for user {self.user_id}")
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"[CALENDAR][ERROR] Failed to get refresh token: {e}")
+            return None
+    
+    async def _get_credentials(self) -> Optional[Credentials]:
+        """Get Google Calendar credentials with optional langchain path."""
+        try:
+            if self.use_langchain:
+                # Use auth0_ai_langchain
+                self.logger.info(f"[CALENDAR] Using auth0_ai_langchain for token exchange")
+                refresh_token = await self._get_refresh_token()
+                if not refresh_token:
+                    self.logger.warning("[CALENDAR] No refresh token, falling back to direct API")
+                    access_token = await self.auth0_management.get_google_access_token_from_auth0(
+                        self.user_id
+                    )
+                else:
+                    access_token = await get_google_token_via_langchain(
+                        self.user_id, 
+                        refresh_token
+                    )
+            else:
+                # Use existing direct API calls
+                self.logger.info(f"[CALENDAR] Using direct Auth0 API for token exchange")
+                access_token = await self.auth0_management.get_google_access_token_from_auth0(
+                    self.user_id
                 )
+            
+            if not access_token:
+                self.logger.error("[CALENDAR] Failed to get access token")
+                return None
+            
+            # Store for later use
+            self.access_token = access_token
+                
+            # Create credentials object
+            credentials = Credentials(
+                token=access_token,
+                refresh_token=None,
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=None,
+                client_secret=None
+            )
+            
+            return credentials
+            
+        except Exception as e:
+            self.logger.error(f"[CALENDAR][ERROR] Credential fetch failed: {e}")
+            return None
+    
+    async def _get_service(self):
+        """Get or create Google Calendar API service with fresh credentials"""
+        if not self.service or not self.access_token:
+            try:
+                # Get credentials (handles both langchain and direct API paths)
+                credentials = await self._get_credentials()
+                
+                if not credentials:
+                    raise Exception("Failed to obtain Google Calendar credentials")
                 
                 # Build Calendar API service
                 self.service = build('calendar', 'v3', credentials=credentials)
-                logger.info("[CALENDAR] Google Calendar service initialized with access token")
+                logger.info("[CALENDAR] Google Calendar service initialized")
             except Exception as e:
                 logger.error(f"[CALENDAR][ERROR] Failed to initialize Calendar service: {e}")
                 raise
@@ -72,7 +147,7 @@ class GoogleCalendarClient:
             List of calendar events with id, title, start, end
         """
         try:
-            service = self._get_service()
+            service = await self._get_service()
             
             # Default to events from now onwards
             if not time_min:
@@ -142,7 +217,7 @@ class GoogleCalendarClient:
             Created event details
         """
         try:
-            service = self._get_service()
+            service = await self._get_service()
             
             # Build event object
             event_body = {
@@ -204,7 +279,7 @@ class GoogleCalendarClient:
             True if deleted successfully
         """
         try:
-            service = self._get_service()
+            service = await self._get_service()
             
             service.events().delete(
                 calendarId='primary',
@@ -243,7 +318,7 @@ class GoogleCalendarClient:
             Updated event details
         """
         try:
-            service = self._get_service()
+            service = await self._get_service()
             
             # Get existing event
             event = service.events().get(
@@ -308,7 +383,7 @@ class GoogleCalendarClient:
             List of conflicting events
         """
         try:
-            service = self._get_service()
+            service = await self._get_service()
             
             # Query events in the time range
             events_result = service.events().list(
